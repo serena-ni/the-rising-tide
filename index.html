@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Rising Tide</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <div id="game-frame" class="relative bg-sky-300/15">
+      <div id="game"></div>
+
+      <div id="start-menu" class="absolute inset-0 z-20 hidden flex-col items-center justify-center gap-4 bg-slate-900/70 backdrop-blur-[1px]">
+        <h1 class="mb-1 text-center font-mono text-4xl font-black uppercase tracking-[0.2em] text-cyan-200 drop-shadow-[0_2px_0_rgba(2,30,45,0.9)] md:text-5xl">
+          The Rising Tide
+        </h1>
+        <p class="mb-4 px-6 text-center font-mono text-sm text-cyan-100/90 md:text-base">
+          The Rising Tide • Under the Surface
+        </p>
+
+        <button id="start-btn" class="w-56 border-2 border-cyan-200 bg-cyan-500 px-6 py-3 font-mono text-lg font-bold uppercase tracking-wider text-slate-900 shadow-[0_4px_0_0_#155e75] transition duration-200 hover:-translate-y-0.5 hover:bg-cyan-300 hover:shadow-[0_6px_0_0_#164e63] active:translate-y-0.5 active:shadow-[0_2px_0_0_#164e63]">
+          Start Game
+        </button>
+        <button id="how-btn" class="w-56 border-2 border-sky-200 bg-sky-700 px-6 py-3 font-mono text-base font-bold uppercase tracking-wider text-sky-100 shadow-[0_4px_0_0_#1e3a8a] transition duration-200 hover:-translate-y-0.5 hover:bg-sky-600 hover:shadow-[0_6px_0_0_#1e40af] active:translate-y-0.5 active:shadow-[0_2px_0_0_#1e40af]">
+          How to Play
+        </button>
+      </div>
+
+      <div id="how-panel" class="pointer-events-none absolute inset-0 z-30 hidden items-center justify-center bg-black/55 p-6">
+        <section class="pointer-events-auto w-full max-w-xl border-2 border-sky-200 bg-slate-900/95 p-5 text-sky-100 shadow-2xl">
+          <h2 class="mb-3 font-mono text-2xl font-bold uppercase tracking-wider text-cyan-200">How to Play</h2>
+          <ul class="space-y-2 font-mono text-sm leading-6 text-sky-100/95 md:text-base">
+            <li>Move with <span class="font-bold text-cyan-200">Arrow Keys</span> or <span class="font-bold text-cyan-200">WASD</span>.</li>
+            <li>Jump with <span class="font-bold text-cyan-200">Up</span>, <span class="font-bold text-cyan-200">W</span>, or <span class="font-bold text-cyan-200">Space</span>.</li>
+            <li>Descend vertically through platforms to reach the abyss floor.</li>
+            <li>Avoid drifting trash and hostile fish, and survive with limited lives.</li>
+            <li>Deeper water slows movement and increases current intensity.</li>
+          </ul>
+          <button id="close-how-btn" class="mt-5 border-2 border-rose-200 bg-rose-600 px-5 py-2 font-mono text-sm font-bold uppercase tracking-wider text-white transition duration-200 hover:bg-rose-500 active:scale-[0.98]">
+            Close
+          </button>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="main.js"></script>
+  <script>
+    const startMenu = document.getElementById('start-menu');
+    const startButton = document.getElementById('start-btn');
+    const howButton = document.getElementById('how-btn');
+    const howPanel = document.getElementById('how-panel');
+    const closeHowButton = document.getElementById('close-how-btn');
+
+    const openHowPanel = () => {
+      howPanel.classList.remove('hidden');
+      howPanel.classList.add('flex');
+      howPanel.classList.remove('pointer-events-none');
+    };
+
+    const closeHowPanel = () => {
+      howPanel.classList.add('hidden');
+      howPanel.classList.remove('flex');
+      howPanel.classList.add('pointer-events-none');
+    };
+
+    const setMenuOpen = (isOpen) => {
+      if (isOpen) {
+        startMenu.classList.remove('hidden');
+        startMenu.classList.add('flex');
+      } else {
+        startMenu.classList.add('hidden');
+        startMenu.classList.remove('flex');
+        closeHowPanel();
+      }
+    };
+
+    document.addEventListener('risingtide:menu-state', (event) => {
+      setMenuOpen(Boolean(event.detail && event.detail.open));
+    });
+
+    howButton.addEventListener('click', openHowPanel);
+    closeHowButton.addEventListener('click', closeHowPanel);
+
+    startButton.addEventListener('click', () => {
+      closeHowPanel();
+      setMenuOpen(false);
+
+      if (window.risingTideStartGame) {
+        window.risingTideStartGame();
+      }
+    });
+  </script>
+</body>
+</html>
