@@ -31,10 +31,10 @@ export class StartMenuScene extends Phaser.Scene {
 
     this.bgShallow = this.add.tileSprite(GAME_WIDTH * 0.5, 170, GAME_WIDTH, 300, 'underwaterShallow');
     this.bgDeep = this.add.tileSprite(GAME_WIDTH * 0.5, 410, GAME_WIDTH, 260, 'underwaterDeep');
-    this.bgDeep.setTint(0x7eaec9);
+    this.bgDeep.setTint(0x7a98a3);
 
-    this.waterOverlay = this.add.tileSprite(GAME_WIDTH * 0.5, GAME_HEIGHT * 0.5, GAME_WIDTH, GAME_HEIGHT, 'waterOverlaySprite').setAlpha(0.33);
-    this.darkOverlay = this.add.rectangle(GAME_WIDTH * 0.5, GAME_HEIGHT * 0.5, GAME_WIDTH, GAME_HEIGHT, 0x0b1f31, 0.42);
+    this.waterOverlay = this.add.tileSprite(GAME_WIDTH * 0.5, GAME_HEIGHT * 0.5, GAME_WIDTH, GAME_HEIGHT, 'waterOverlaySprite').setAlpha(0.28);
+    this.darkOverlay = this.add.rectangle(GAME_WIDTH * 0.5, GAME_HEIGHT * 0.5, GAME_WIDTH, GAME_HEIGHT, 0x2b3e46, 0.45);
 
     this.waveBandA = this.add.graphics().setScrollFactor(0).setDepth(20);
     this.waveBandB = this.add.graphics().setScrollFactor(0).setDepth(21);
@@ -95,10 +95,10 @@ export class StartMenuScene extends Phaser.Scene {
 
     const time = this.time.now * 0.001;
     drawWaveBand(this.waveBandA, GAME_WIDTH, GAME_HEIGHT, time, {
-      fillColor: 0x2eaed7,
+      fillColor: 0x7fa3b2,
       fillAlpha: 0.12,
-      lineColor: 0xcaf8ff,
-      lineAlpha: 0.58,
+      lineColor: 0xd8e3e7,
+      lineAlpha: 0.5,
       lineWidth: 2,
       sampleStep: 10,
       waveConfig: {
@@ -115,10 +115,10 @@ export class StartMenuScene extends Phaser.Scene {
     });
 
     drawWaveBand(this.waveBandB, GAME_WIDTH, GAME_HEIGHT, time + 0.7, {
-      fillColor: 0x1d84ac,
+      fillColor: 0x5d7a88,
       fillAlpha: 0.08,
-      lineColor: 0x8bddff,
-      lineAlpha: 0.45,
+      lineColor: 0xc0d6e4,
+      lineAlpha: 0.4,
       lineWidth: 1,
       sampleStep: 12,
       waveConfig: {

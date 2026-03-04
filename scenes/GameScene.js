@@ -13,6 +13,11 @@ export class GameScene extends Phaser.Scene {
     this.invulnerableTime = 0;
     this.isEnding = false;
     this.spawnPoint = { x: 120, y: 460 };
+    this.coyoteTimer = 0;
+    this.jumpBufferTimer = 0;
+    this.wasGrounded = false;
+    this.lastLandingFxTime = -9999;
+    this.lowLifeHudPulse = 0;
   }
 
   preload() {
@@ -40,7 +45,8 @@ export class GameScene extends Phaser.Scene {
   create() {
     this.cameras.main.fadeIn(460, 0, 0, 0);
 
-    this.physics.world.gravity.y = 470;
+    // Floatier underwater movement.
+    this.physics.world.gravity.y = 390;
     this.physics.world.setBounds(0, 0, WORLD_PLAY_WIDTH, WORLD_PLAY_HEIGHT);
 
     this.createParallaxBackground();
@@ -79,6 +85,17 @@ export class GameScene extends Phaser.Scene {
     if (this.isEnding) return;
 
     const dt = delta / 1000;
+    const isGrounded = this.player.body.blocked.down || this.player.body.touching.down;
+
+    if (isGrounded) {
+      if (!this.wasGrounded && this.player.body.velocity.y > 100) {
+        this.onPlayerLanded();
+      }
+      this.coyoteTimer = 0.12;
+    } else {
+      this.coyoteTimer = Math.max(0, this.coyoteTimer - dt);
+    }
+    this.jumpBufferTimer = Math.max(0, this.jumpBufferTimer - dt);
 
     this.updateDepthByVerticalPosition();
     this.handlePlayerInput();
@@ -95,6 +112,8 @@ export class GameScene extends Phaser.Scene {
     this.player.setAlpha(this.invulnerableTime > 0 ? 0.65 : 1);
 
     this.hudText.setText(`Score ${this.score}   Depth ${Math.floor(this.depthProgress * 100)}%   Lives ${this.lives}`);
+    this.updateHudPulse(dt);
+    this.wasGrounded = isGrounded;
 
     if (this.player.y > WORLD_PLAY_HEIGHT - 20) {
       this.damagePlayer(this.player.x, this.player.y - 30);
@@ -121,29 +140,32 @@ export class GameScene extends Phaser.Scene {
 
   createPlatforms() {
     this.platforms = this.physics.add.staticGroup();
+    this.tierYs = [];
 
-    // Starting platform
-    for (let i = 0; i < 5; i++) {
-      const tile = this.platforms.create(90 + i * 64, 510, 'platformRock').setScale(2);
-      tile.refreshBody();
-    }
+    // Stacked tier prototype:
+    // - same platform width on every layer
+    // - consistent vertical spacing
+    // - alternating horizontal position for careful zig-zag descent
+    // - clear side/middle gaps for faster free-fall routes
+    const tileSize = 64;
+    const tilesPerTier = 8;
+    const tierWidth = tilesPerTier * tileSize;
+    const tierSpacing = 145;
+    const tierCount = 20;
+    const tierStartY = 520;
 
-    // Descending path: deeper means tighter platform sizes and spacing.
-    let y = 430;
-    let x = 260;
-    while (y < WORLD_PLAY_HEIGHT - 170) {
-      const depthRatio = Phaser.Math.Clamp(y / WORLD_PLAY_HEIGHT, 0, 1);
-      const tileCount = Math.max(2, 5 - Math.floor(depthRatio * 3));
-      const jumpX = Phaser.Math.Between(-220, 220);
-      x = Phaser.Math.Clamp(x + jumpX, 100, WORLD_PLAY_WIDTH - 220);
-      const verticalStep = Phaser.Math.Between(120, 165) + Math.floor(depthRatio * 30);
+    const leftTierX = 56;
+    const rightTierX = WORLD_PLAY_WIDTH - tierWidth - 56;
 
-      for (let i = 0; i < tileCount; i++) {
-        const tile = this.platforms.create(x + i * 64, y, 'platformRock').setScale(2);
+    for (let tierIndex = 0; tierIndex < tierCount; tierIndex++) {
+      const tierY = tierStartY + tierIndex * tierSpacing;
+      const startX = tierIndex % 2 === 0 ? leftTierX : rightTierX;
+      this.tierYs.push(tierY);
+
+      for (let tileIndex = 0; tileIndex < tilesPerTier; tileIndex++) {
+        const tile = this.platforms.create(startX + tileIndex * tileSize, tierY, 'platformRock').setScale(2);
         tile.refreshBody();
       }
-
-      y += verticalStep;
     }
   }
 
@@ -153,6 +175,7 @@ export class GameScene extends Phaser.Scene {
     this.player.setSize(14, 14);
     this.player.body.setOffset(1, 1);
     this.player.body.setDragX(520);
+    this.player.body.setMaxVelocity(260, 560);
 
     this.physics.add.collider(this.player, this.platforms);
   }
@@ -167,12 +190,21 @@ export class GameScene extends Phaser.Scene {
       bounceY: 1
     });
 
-    for (let i = 0; i < 30; i++) {
+    // Obstacles are seeded between platform tiers so both careful routing and free-fall are viable.
+    const obstacleBands = [];
+    for (let i = 0; i < this.tierYs.length - 1; i++) {
+      const bandTop = this.tierYs[i] + 24;
+      const bandBottom = this.tierYs[i + 1] - 30;
+      obstacleBands.push({ top: bandTop, bottom: bandBottom });
+    }
+
+    for (let i = 0; i < 34; i++) {
       const key = trashKeys[i % trashKeys.length];
-      const depthRatio = i / 29;
+      const depthRatio = i / 33;
+      const band = obstacleBands[i % obstacleBands.length];
       const trash = this.trashGroup.create(
         Phaser.Math.Between(80, WORLD_PLAY_WIDTH - 80),
-        Phaser.Math.Between(580, WORLD_PLAY_HEIGHT - 170),
+        Phaser.Math.Between(band.top, band.bottom),
         key
       ).setScale(1.7 + depthRatio * 0.2);
 
@@ -188,10 +220,20 @@ export class GameScene extends Phaser.Scene {
   createCollectibles() {
     this.collectibles = this.physics.add.group({ allowGravity: false, immovable: true });
 
-    for (let i = 0; i < 40; i++) {
+    // Collectibles are also distributed in inter-tier airspace.
+    const collectibleBands = [];
+    for (let i = 0; i < this.tierYs.length - 1; i++) {
+      collectibleBands.push({
+        top: this.tierYs[i] + 18,
+        bottom: this.tierYs[i + 1] - 36
+      });
+    }
+
+    for (let i = 0; i < 44; i++) {
+      const band = collectibleBands[i % collectibleBands.length];
       const item = this.collectibles.create(
         Phaser.Math.Between(70, WORLD_PLAY_WIDTH - 70),
-        Phaser.Math.Between(620, WORLD_PLAY_HEIGHT - 160),
+        Phaser.Math.Between(band.top, band.bottom),
         'bubbleCollectible'
       ).setScale(1.4);
 
@@ -211,14 +253,23 @@ export class GameScene extends Phaser.Scene {
       immovable: true
     });
 
+    const enemyBands = [];
+    for (let i = 0; i < this.tierYs.length - 1; i++) {
+      enemyBands.push({
+        top: this.tierYs[i] + 22,
+        bottom: this.tierYs[i + 1] - 40
+      });
+    }
+
     for (let i = 0; i < 14; i++) {
       const key = fishKeys[i % fishKeys.length];
-      const y = Phaser.Math.Between(700, WORLD_PLAY_HEIGHT - 180);
+      const band = enemyBands[i % enemyBands.length];
+      const y = Phaser.Math.Between(band.top, band.bottom);
       const enemy = this.enemies.create(
         Phaser.Math.Between(100, WORLD_PLAY_WIDTH - 100),
         y,
         key
-      ).setScale(1.5).setTint(0x9cc7dd);
+      ).setScale(1.5).setTint(0x8ea3ad);
 
       enemy.patrolSpeed = Phaser.Math.Between(45, 95);
       enemy.direction = Phaser.Math.Between(0, 1) ? 1 : -1;
@@ -261,6 +312,28 @@ export class GameScene extends Phaser.Scene {
       scale: { start: 1.05, end: 0.4 },
       alpha: { start: 0, end: 0.8 }
     });
+
+    this.landingEmitter = this.add.particles(0, 0, 'bubbleCollectible', {
+      speed: { min: 45, max: 140 },
+      angle: { min: 250, max: 290 },
+      gravityY: 160,
+      lifespan: { min: 260, max: 520 },
+      scale: { start: 0.9, end: 0 },
+      alpha: { start: 0.85, end: 0 },
+      quantity: 8,
+      emitting: false
+    });
+
+    this.pickupEmitter = this.add.particles(0, 0, 'bubbleCollectible', {
+      speed: { min: 30, max: 120 },
+      angle: { min: 200, max: 340 },
+      gravityY: 45,
+      lifespan: { min: 300, max: 520 },
+      scale: { start: 1.15, end: 0 },
+      alpha: { start: 0.92, end: 0 },
+      quantity: 10,
+      emitting: false
+    });
   }
 
   createGoalZone() {
@@ -268,10 +341,11 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.existing(this.goal, true);
 
     this.goalLabel = this.add.text(WORLD_PLAY_WIDTH * 0.5, WORLD_PLAY_HEIGHT - 120, 'ABYSS FLOOR', {
-      fontFamily: 'monospace',
+      // Silkscreen for in-canvas UI text. Change fontFamily here to swap pixel font.
+      fontFamily: 'Silkscreen, monospace',
       fontSize: '16px',
-      color: '#c5f3ff',
-      stroke: '#103244',
+      color: '#D8E3E7',
+      stroke: '#2d424c',
       strokeThickness: 4
     }).setOrigin(0.5);
 
@@ -280,10 +354,11 @@ export class GameScene extends Phaser.Scene {
 
   createHud() {
     this.hudText = this.add.text(14, 14, 'Score 0   Depth 0%   Lives 3', {
-      fontFamily: 'monospace',
+      // Silkscreen for HUD readability on underwater backgrounds.
+      fontFamily: 'Silkscreen, monospace',
       fontSize: '18px',
-      color: '#effaff',
-      stroke: '#0e2838',
+      color: '#C0D6E4',
+      stroke: '#253a45',
       strokeThickness: 4
     }).setScrollFactor(0).setDepth(100);
   }
@@ -296,26 +371,87 @@ export class GameScene extends Phaser.Scene {
   handlePlayerInput() {
     const leftPressed = this.controls.left.isDown || this.controls.a.isDown;
     const rightPressed = this.controls.right.isDown || this.controls.d.isDown;
-    const jumpPressed = this.controls.up.isDown || this.controls.w.isDown || Phaser.Input.Keyboard.JustDown(this.controls.space);
+    const jumpPressed = Phaser.Input.Keyboard.JustDown(this.controls.up)
+      || Phaser.Input.Keyboard.JustDown(this.controls.w)
+      || Phaser.Input.Keyboard.JustDown(this.controls.space);
+    const jumpHeld = this.controls.up.isDown || this.controls.w.isDown || this.controls.space.isDown;
 
     // Gets harder with depth: less horizontal control and weaker jump.
-    const speed = Phaser.Math.Linear(180, 110, this.depthProgress);
-    const jumpPower = Phaser.Math.Linear(-320, -235, this.depthProgress);
+    const speed = Phaser.Math.Linear(176, 110, this.depthProgress);
+    const jumpPower = Phaser.Math.Linear(-310, -232, this.depthProgress);
+    const accel = speed * 8;
 
     if (leftPressed) {
-      this.player.setVelocityX(-speed);
+      this.player.setAccelerationX(-accel);
       this.player.setFlipX(true);
     } else if (rightPressed) {
-      this.player.setVelocityX(speed);
+      this.player.setAccelerationX(accel);
       this.player.setFlipX(false);
+    } else {
+      this.player.setAccelerationX(0);
     }
 
-    if (jumpPressed && this.player.body.blocked.down) {
+    if (jumpPressed) {
+      this.jumpBufferTimer = 0.12;
+    }
+
+    if (this.jumpBufferTimer > 0 && this.coyoteTimer > 0) {
       this.player.setVelocityY(jumpPower);
+      this.jumpBufferTimer = 0;
+      this.coyoteTimer = 0;
       this.playPlink(280, 0.03);
+      this.tweens.add({
+        targets: this.player,
+        scaleX: 1.82,
+        scaleY: 2.16,
+        duration: 80,
+        yoyo: true,
+        ease: 'Sine.Out'
+      });
     }
 
-    this.player.setAngle(this.player.body.velocity.x * 0.012);
+    if (!jumpHeld && this.player.body.velocity.y < -50) {
+      this.player.body.velocity.y += 11;
+    }
+
+    this.player.setAngle(Phaser.Math.Clamp(this.player.body.velocity.x * 0.018, -12, 12));
+  }
+
+  onPlayerLanded() {
+    if (this.isEnding) return;
+
+    const now = this.time.now;
+    if (now - this.lastLandingFxTime < 120) return;
+    this.lastLandingFxTime = now;
+
+    if (this.landingEmitter) {
+      this.landingEmitter.explode(8, this.player.x, this.player.y + 12);
+    }
+
+    this.playPlink(220, 0.014);
+    this.cameras.main.shake(85, 0.0018);
+
+    this.tweens.killTweensOf(this.player);
+    this.player.setScale(2.14, 1.84);
+    this.tweens.add({
+      targets: this.player,
+      scaleX: 2,
+      scaleY: 2,
+      duration: 130,
+      ease: 'Quad.Out'
+    });
+  }
+
+  updateHudPulse(dt) {
+    if (this.lives > 1) {
+      this.lowLifeHudPulse = 0;
+      this.hudText.setScale(1);
+      return;
+    }
+
+    this.lowLifeHudPulse += dt * 8;
+    const scale = 1 + Math.sin(this.lowLifeHudPulse) * 0.045;
+    this.hudText.setScale(scale);
   }
 
   applyCurrentToPlayer(dt) {
@@ -349,10 +485,10 @@ export class GameScene extends Phaser.Scene {
     const baseB = 225 + this.depthProgress * 85;
 
     drawWaveBand(this.waveMathA, GAME_WIDTH, GAME_HEIGHT, time, {
-      fillColor: 0x278fb8,
+      fillColor: 0x3b5a66,
       fillAlpha: 0.12 + this.depthProgress * 0.1,
-      lineColor: 0xa9eeff,
-      lineAlpha: 0.55,
+      lineColor: 0xc0d6e4,
+      lineAlpha: 0.48,
       lineWidth: 1,
       sampleStep: 10,
       waveConfig: {
@@ -370,10 +506,10 @@ export class GameScene extends Phaser.Scene {
     });
 
     drawWaveBand(this.waveMathB, GAME_WIDTH, GAME_HEIGHT, time + 1.1, {
-      fillColor: 0x1b6f95,
+      fillColor: 0x2c4a58,
       fillAlpha: 0.09 + this.depthProgress * 0.08,
-      lineColor: 0x7fd6f5,
-      lineAlpha: 0.43,
+      lineColor: 0xa7bcc8,
+      lineAlpha: 0.38,
       lineWidth: 1,
       sampleStep: 12,
       waveConfig: {
@@ -437,7 +573,7 @@ export class GameScene extends Phaser.Scene {
 
     const tintColor = Phaser.Display.Color.Interpolate.ColorWithColor(
       Phaser.Display.Color.ValueToColor(0xffffff),
-      Phaser.Display.Color.ValueToColor(0x6a9fbe),
+      Phaser.Display.Color.ValueToColor(0x7d939f),
       100,
       Math.floor(this.depthProgress * 100)
     );
@@ -457,6 +593,8 @@ export class GameScene extends Phaser.Scene {
     player.body.velocity.scale(0.8);
 
     this.playPlink(170, 0.04);
+    this.cameras.main.shake(150, 0.0045);
+    this.cameras.main.flash(120, 115, 150, 166, true);
     this.damagePlayer(player.x, player.y);
   }
 
@@ -468,6 +606,8 @@ export class GameScene extends Phaser.Scene {
     player.body.velocity.y += push.y - 90;
 
     this.playPlink(140, 0.05);
+    this.cameras.main.shake(180, 0.0052);
+    this.cameras.main.flash(140, 120, 165, 186, true);
     this.damagePlayer(player.x, player.y);
   }
 
@@ -490,15 +630,46 @@ export class GameScene extends Phaser.Scene {
   }
 
   collectBubble(_, item) {
+    const collectX = item.x;
+    const collectY = item.y;
+
     item.disableBody(true, true);
     this.score += item.scoreValue;
-    this.playPlink(510, 0.024);
+    this.playPlink(500 + Phaser.Math.Between(-40, 70), 0.024);
+
+    if (this.pickupEmitter) {
+      this.pickupEmitter.explode(10, collectX, collectY);
+    }
+
+    const popup = this.add.text(collectX, collectY - 10, `+${item.scoreValue}`, {
+      fontFamily: 'Silkscreen, monospace',
+      fontSize: '14px',
+      color: '#D8F6FF',
+      stroke: '#2d424c',
+      strokeThickness: 3
+    }).setOrigin(0.5).setDepth(140);
+
+    this.tweens.add({
+      targets: popup,
+      y: popup.y - 24,
+      alpha: 0,
+      duration: 340,
+      ease: 'Sine.Out',
+      onComplete: () => popup.destroy()
+    });
+
+    this.cameras.main.setZoom(1.02);
+    this.time.delayedCall(90, () => {
+      if (!this.isEnding) {
+        this.cameras.main.setZoom(1);
+      }
+    });
 
     this.time.delayedCall(2200, () => {
       item.enableBody(
         true,
         Phaser.Math.Between(70, WORLD_PLAY_WIDTH - 70),
-        Phaser.Math.Between(620, WORLD_PLAY_HEIGHT - 160),
+        Phaser.Math.Between(this.tierYs[1] + 18, this.tierYs[this.tierYs.length - 1] - 40),
         true,
         true
       );
@@ -515,9 +686,9 @@ export class GameScene extends Phaser.Scene {
     this.showEndScreen({
       title: 'YOU REACHED\nTHE ABYSS FLOOR',
       subtitle: 'The water swallowed the world, but you made it down.',
-      panelColor: 0x04131d,
-      titleColor: '#d8f6ff',
-      strokeColor: '#0d2a3a'
+      panelColor: 0x2c3f47,
+      titleColor: '#F0E5D8',
+      strokeColor: '#425b64'
     });
   }
 
@@ -527,9 +698,9 @@ export class GameScene extends Phaser.Scene {
     this.showEndScreen({
       title: 'LOST IN THE TIDE',
       subtitle: 'The current pulled you under this run.',
-      panelColor: 0x1a0608,
-      titleColor: '#ffd3d3',
-      strokeColor: '#3a1012'
+      panelColor: 0x3a454a,
+      titleColor: '#E0E0E0',
+      strokeColor: '#55646a'
     });
   }
 
@@ -547,7 +718,7 @@ export class GameScene extends Phaser.Scene {
     ).setDepth(200);
 
     const title = this.add.text(centerX, centerY - 80, config.title, {
-      fontFamily: 'monospace',
+      fontFamily: 'Silkscreen, monospace',
       fontSize: '36px',
       align: 'center',
       color: config.titleColor,
@@ -556,27 +727,27 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(210).setAlpha(0);
 
     const subtitle = this.add.text(centerX, centerY + 6, config.subtitle, {
-      fontFamily: 'monospace',
+      fontFamily: 'Silkscreen, monospace',
       fontSize: '16px',
-      color: '#d9edf7',
-      stroke: '#102734',
+      color: '#E0E0E0',
+      stroke: '#2f444d',
       strokeThickness: 4,
       align: 'center'
     }).setOrigin(0.5).setDepth(210).setAlpha(0);
 
     const playAgainButton = this.add.text(centerX, centerY + 84, 'PLAY AGAIN (ENTER / R)', {
-      fontFamily: 'monospace',
+      fontFamily: 'Silkscreen, monospace',
       fontSize: '20px',
-      color: '#e7fdff',
-      backgroundColor: '#1f5f7a',
+      color: '#F5F5F5',
+      backgroundColor: '#5E7E8D',
       padding: { left: 12, right: 12, top: 8, bottom: 8 }
     }).setOrigin(0.5).setDepth(211).setAlpha(0).setInteractive({ useHandCursor: true });
 
     const menuButton = this.add.text(centerX, centerY + 132, 'BACK TO MENU (M)', {
-      fontFamily: 'monospace',
+      fontFamily: 'Silkscreen, monospace',
       fontSize: '18px',
-      color: '#f4f8fb',
-      backgroundColor: '#324656',
+      color: '#F5F5F5',
+      backgroundColor: '#4A6570',
       padding: { left: 10, right: 10, top: 6, bottom: 6 }
     }).setOrigin(0.5).setDepth(211).setAlpha(0).setInteractive({ useHandCursor: true });
 
@@ -604,8 +775,8 @@ export class GameScene extends Phaser.Scene {
       repeat: -1,
       onUpdate: () => {
         const colorLerp = Phaser.Display.Color.Interpolate.ColorWithColor(
-          Phaser.Display.Color.ValueToColor(0x1f5f7a),
-          Phaser.Display.Color.ValueToColor(0x3f95b7),
+          Phaser.Display.Color.ValueToColor(0x5e7e8d),
+          Phaser.Display.Color.ValueToColor(0x4a6570),
           100,
           Math.floor(pulseTarget.value * 100)
         );
@@ -625,6 +796,22 @@ export class GameScene extends Phaser.Scene {
 
     playAgainButton.on('pointerdown', () => cleanupAnd('GameScene'));
     menuButton.on('pointerdown', () => cleanupAnd('StartMenuScene'));
+
+    playAgainButton.on('pointerover', () => {
+      playAgainButton.setScale(1.04);
+      this.playPlink(420, 0.012);
+    });
+    playAgainButton.on('pointerout', () => {
+      playAgainButton.setScale(1);
+    });
+
+    menuButton.on('pointerover', () => {
+      menuButton.setScale(1.03);
+      this.playPlink(380, 0.01);
+    });
+    menuButton.on('pointerout', () => {
+      menuButton.setScale(1);
+    });
 
     // Keep end screen longer before controls become active.
     this.time.delayedCall(1800, () => {

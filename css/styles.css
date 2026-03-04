@@ -7,9 +7,9 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at top, #18384a, #0c1a21);
-  color: #e7f7ff;
-  font-family: "Consolas", "Courier New", monospace;
+  background: radial-gradient(circle at top, #445e6b, #25353d);
+  color: #e0e0e0;
+  font-family: "Silkscreen", monospace;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,10 +21,10 @@ body {
 }
 
 #game-frame {
-  border: 3px solid #3b6277;
+  border: 3px solid #5c7885;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 20px 40px rgba(20, 29, 34, 0.45);
   max-width: 100%;
 }
 

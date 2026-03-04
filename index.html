@@ -4,42 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Rising Tide</title>
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            pixel: ['Silkscreen', 'monospace'],
+            round: ['Silkscreen', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <main class="shell">
-    <div id="game-frame" class="relative bg-sky-300/15">
+    <div id="game-frame" class="relative bg-slate-400/20">
       <div id="game"></div>
 
-      <div id="start-menu" class="absolute inset-0 z-20 hidden flex-col items-center justify-center gap-4 bg-slate-900/70 backdrop-blur-[1px]">
-        <h1 class="mb-1 text-center font-mono text-4xl font-black uppercase tracking-[0.2em] text-cyan-200 drop-shadow-[0_2px_0_rgba(2,30,45,0.9)] md:text-5xl">
+      <div id="start-menu" class="absolute inset-0 z-20 hidden flex-col items-center justify-center gap-4 bg-slate-700/70 backdrop-blur-[1px]">
+        <h1 class="mb-1 text-center font-pixel text-4xl font-black uppercase tracking-[0.2em] text-[#F0E5D8] drop-shadow-[0_2px_0_rgba(42,56,64,0.9)] md:text-5xl">
           The Rising Tide
         </h1>
-        <p class="mb-4 px-6 text-center font-mono text-sm text-cyan-100/90 md:text-base">
+        <p class="mb-4 px-6 text-center font-pixel text-base text-[#E0E0E0]/95 md:text-lg">
           The Rising Tide • Under the Surface
         </p>
 
-        <button id="start-btn" class="w-56 border-2 border-cyan-200 bg-cyan-500 px-6 py-3 font-mono text-lg font-bold uppercase tracking-wider text-slate-900 shadow-[0_4px_0_0_#155e75] transition duration-200 hover:-translate-y-0.5 hover:bg-cyan-300 hover:shadow-[0_6px_0_0_#164e63] active:translate-y-0.5 active:shadow-[0_2px_0_0_#164e63]">
+        <button id="start-btn" class="w-64 border-2 border-slate-200 bg-[#6FA0B0] px-6 py-3 font-pixel text-lg uppercase tracking-wide text-[#F5F5F5] shadow-[0_4px_0_0_#5E7E8D] transition duration-200 hover:-translate-y-0.5 hover:bg-[#4A6570] hover:shadow-[0_6px_0_0_#3d5560] active:translate-y-0.5 active:shadow-[0_2px_0_0_#3d5560]">
           Start Game
         </button>
-        <button id="how-btn" class="w-56 border-2 border-sky-200 bg-sky-700 px-6 py-3 font-mono text-base font-bold uppercase tracking-wider text-sky-100 shadow-[0_4px_0_0_#1e3a8a] transition duration-200 hover:-translate-y-0.5 hover:bg-sky-600 hover:shadow-[0_6px_0_0_#1e40af] active:translate-y-0.5 active:shadow-[0_2px_0_0_#1e40af]">
+        <button id="how-btn" class="w-64 border-2 border-slate-200 bg-[#5E7E8D] px-6 py-3 font-pixel text-base uppercase tracking-wide text-[#F5F5F5] shadow-[0_4px_0_0_#4d6773] transition duration-200 hover:-translate-y-0.5 hover:bg-[#4A6570] hover:shadow-[0_6px_0_0_#3d5560] active:translate-y-0.5 active:shadow-[0_2px_0_0_#3d5560]">
           How to Play
         </button>
       </div>
 
-      <div id="how-panel" class="pointer-events-none absolute inset-0 z-30 hidden items-center justify-center bg-black/55 p-6">
-        <section class="pointer-events-auto w-full max-w-xl border-2 border-sky-200 bg-slate-900/95 p-5 text-sky-100 shadow-2xl">
-          <h2 class="mb-3 font-mono text-2xl font-bold uppercase tracking-wider text-cyan-200">How to Play</h2>
-          <ul class="space-y-2 font-mono text-sm leading-6 text-sky-100/95 md:text-base">
-            <li>Move with <span class="font-bold text-cyan-200">Arrow Keys</span> or <span class="font-bold text-cyan-200">WASD</span>.</li>
-            <li>Jump with <span class="font-bold text-cyan-200">Up</span>, <span class="font-bold text-cyan-200">W</span>, or <span class="font-bold text-cyan-200">Space</span>.</li>
+      <div id="how-panel" class="pointer-events-none absolute inset-0 z-30 hidden items-center justify-center bg-[#3E4C50]/70 p-6">
+        <section class="pointer-events-auto w-full max-w-xl border-2 border-slate-200 bg-[#3E4C50]/95 p-5 text-[#F5F5F5] shadow-2xl">
+          <h2 class="mb-3 font-pixel text-2xl uppercase tracking-wide text-[#F5F5F5]">How to Play</h2>
+          <ul class="space-y-2 font-pixel text-sm leading-6 text-[#F5F5F5]/95 md:text-base">
+            <li>Move with <span class="font-bold text-[#D8E3E7]">Arrow Keys</span> or <span class="font-bold text-[#D8E3E7]">WASD</span>.</li>
+            <li>Jump with <span class="font-bold text-[#D8E3E7]">Up</span>, <span class="font-bold text-[#D8E3E7]">W</span>, or <span class="font-bold text-[#D8E3E7]">Space</span>.</li>
             <li>Descend vertically through platforms to reach the abyss floor.</li>
             <li>Avoid drifting trash and hostile fish, and survive with limited lives.</li>
             <li>Deeper water slows movement and increases current intensity.</li>
           </ul>
-          <button id="close-how-btn" class="mt-5 border-2 border-rose-200 bg-rose-600 px-5 py-2 font-mono text-sm font-bold uppercase tracking-wider text-white transition duration-200 hover:bg-rose-500 active:scale-[0.98]">
+          <button id="close-how-btn" class="mt-5 border-2 border-slate-200 bg-[#5E7E8D] px-5 py-2 font-pixel text-sm uppercase tracking-wide text-[#F5F5F5] transition duration-200 hover:bg-[#4A6570] active:scale-[0.98]">
             Close
           </button>
         </section>
@@ -54,6 +67,60 @@
     const howButton = document.getElementById('how-btn');
     const howPanel = document.getElementById('how-panel');
     const closeHowButton = document.getElementById('close-how-btn');
+    const uiButtons = [startButton, howButton, closeHowButton];
+
+    let uiAudioCtx;
+    const playUiTone = (frequency, gainLevel, durationSeconds) => {
+      try {
+        if (!uiAudioCtx) {
+          uiAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        if (uiAudioCtx.state === 'suspended') {
+          uiAudioCtx.resume();
+        }
+
+        const now = uiAudioCtx.currentTime;
+        const oscillator = uiAudioCtx.createOscillator();
+        const gain = uiAudioCtx.createGain();
+
+        oscillator.type = 'triangle';
+        oscillator.frequency.value = frequency;
+        gain.gain.value = gainLevel;
+
+        oscillator.connect(gain);
+        gain.connect(uiAudioCtx.destination);
+
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + durationSeconds);
+        oscillator.start(now);
+        oscillator.stop(now + durationSeconds + 0.01);
+      } catch (error) {
+        // Silent fallback if browser blocks autoplay audio.
+      }
+    };
+
+    const wireButtonMicroInteraction = (button) => {
+      button.addEventListener('pointerenter', () => {
+        button.style.filter = 'brightness(1.07)';
+      });
+
+      button.addEventListener('pointerleave', () => {
+        button.style.filter = '';
+        button.style.transform = '';
+      });
+
+      button.addEventListener('pointerdown', () => {
+        playUiTone(320, 0.012, 0.07);
+        button.style.transform = 'translateY(1px) scale(0.985)';
+      });
+
+      button.addEventListener('pointerup', () => {
+        playUiTone(520, 0.009, 0.05);
+        button.style.transform = '';
+      });
+    };
+
+    uiButtons.forEach(wireButtonMicroInteraction);
 
     const openHowPanel = () => {
       howPanel.classList.remove('hidden');

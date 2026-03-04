@@ -49,8 +49,8 @@ export class IntroScene extends Phaser.Scene {
     // Hidden lower region that gets revealed during sink.
     this.underwaterLayer = this.add.tileSprite(GAME_WIDTH * 0.5, 740, GAME_WIDTH, 360, 'underwaterShallow').setAlpha(0.85);
     this.deepLayer = this.add.tileSprite(GAME_WIDTH * 0.5, 920, GAME_WIDTH, 320, 'underwaterDeep').setAlpha(0.95);
-    this.transitionOverlay = this.add.rectangle(GAME_WIDTH * 0.5, 520, GAME_WIDTH, 34, 0xb9f3ff, 0.28);
-    this.pollutionOverlay = this.add.rectangle(GAME_WIDTH * 0.5, 790, GAME_WIDTH, 520, 0x183545, 0.08);
+    this.transitionOverlay = this.add.rectangle(GAME_WIDTH * 0.5, 520, GAME_WIDTH, 34, 0xb8c8ce, 0.24);
+    this.pollutionOverlay = this.add.rectangle(GAME_WIDTH * 0.5, 790, GAME_WIDTH, 520, 0x2b3f47, 0.1);
 
     this.clouds = [];
     for (let index = 0; index < 4; index++) {
@@ -126,35 +126,36 @@ export class IntroScene extends Phaser.Scene {
       alpha: { start: 0, end: 0.65 }
     });
 
-    this.tintOverlay = this.add.rectangle(GAME_WIDTH * 0.5, GAME_HEIGHT * 0.5, GAME_WIDTH, GAME_HEIGHT, 0x2d9ed2, 0)
+    this.tintOverlay = this.add.rectangle(GAME_WIDTH * 0.5, GAME_HEIGHT * 0.5, GAME_WIDTH, GAME_HEIGHT, 0x6d8f9e, 0)
       .setScrollFactor(0)
       .setDepth(80);
 
-    this.darkOverlay = this.add.rectangle(GAME_WIDTH * 0.5, GAME_HEIGHT * 0.5, GAME_WIDTH, GAME_HEIGHT, 0x071826, 0)
+    this.darkOverlay = this.add.rectangle(GAME_WIDTH * 0.5, GAME_HEIGHT * 0.5, GAME_WIDTH, GAME_HEIGHT, 0x1f3138, 0)
       .setScrollFactor(0)
       .setDepth(81);
 
+    // Silkscreen font is used for in-canvas retro/pixel text. Swap here if desired.
     this.titleText = this.add.text(GAME_WIDTH * 0.5, 88, 'THE RISING TIDE', {
-      fontFamily: 'monospace',
+      fontFamily: 'Silkscreen, monospace',
       fontSize: '44px',
-      color: '#eaf9ff',
-      stroke: '#103345',
+      color: '#F0E5D8',
+      stroke: '#4c5960',
       strokeThickness: 6
     }).setOrigin(0.5).setScrollFactor(0).setDepth(90);
 
     this.prompt = this.add.text(GAME_WIDTH * 0.5, GAME_HEIGHT - 52, 'Press Any Key to Continue', {
-      fontFamily: 'monospace',
+      fontFamily: 'Silkscreen, monospace',
       fontSize: '17px',
-      color: '#d5f2ff',
-      stroke: '#0d2b3d',
+      color: '#D8CBB3',
+      stroke: '#4a555a',
       strokeThickness: 4
     }).setOrigin(0.5).setScrollFactor(0).setDepth(90);
 
     this.subtitle = this.add.text(GAME_WIDTH * 0.5, GAME_HEIGHT - 28, 'A calm shore hides a darker world below.', {
-      fontFamily: 'monospace',
+      fontFamily: 'Silkscreen, monospace',
       fontSize: '12px',
-      color: '#c3e8f8',
-      stroke: '#0d2b3d',
+      color: '#E0E0E0',
+      stroke: '#46545a',
       strokeThickness: 3
     }).setOrigin(0.5).setScrollFactor(0).setDepth(90);
 
@@ -182,10 +183,10 @@ export class IntroScene extends Phaser.Scene {
 
     this.surfaceWaveBand.setPosition(0, 0);
     drawWaveBand(this.surfaceWaveBand, GAME_WIDTH, 560, time, {
-      fillColor: 0x2fb7df,
-      fillAlpha: 0.18,
-      lineColor: 0xd9fbff,
-      lineAlpha: 0.75,
+      fillColor: 0x7fa3b2,
+      fillAlpha: 0.16,
+      lineColor: 0xd8e3e7,
+      lineAlpha: 0.62,
       lineWidth: 2,
       sampleStep: 8,
       waveConfig: {
@@ -203,10 +204,10 @@ export class IntroScene extends Phaser.Scene {
     });
 
     drawWaveBand(this.secondaryWaveBand, GAME_WIDTH, 560, time + 0.9, {
-      fillColor: 0x1a89b8,
-      fillAlpha: 0.1,
-      lineColor: 0xa3e9ff,
-      lineAlpha: 0.5,
+      fillColor: 0x5d7a88,
+      fillAlpha: 0.09,
+      lineColor: 0xc0d6e4,
+      lineAlpha: 0.44,
       lineWidth: 1,
       sampleStep: 10,
       waveConfig: {
