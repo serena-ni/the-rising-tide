@@ -6,32 +6,52 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: radial-gradient(circle at top, #445e6b, #25353d);
   color: #e0e0e0;
   font-family: "Silkscreen", monospace;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 0;
+  overflow: hidden;
 }
 
 .shell {
-  width: min(100%, 980px);
+  width: 100vw;
+  height: 100dvh;
 }
 
 #game-frame {
-  border: 3px solid #5c7885;
-  border-radius: 10px;
+  border: 0;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(20, 29, 34, 0.45);
-  max-width: 100%;
+  box-shadow: none;
+  width: 100%;
+  height: 100%;
+}
+
+#game {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
 }
 
 canvas {
   display: block;
-  width: 100%;
-  height: auto;
-  max-height: 85vh;
+  width: 100% !important;
+  height: 100% !important;
   margin: 0 auto;
+}
+
+button {
+  min-height: 44px;
+}
+
+@media (max-width: 768px) {
+  #start-menu,
+  #how-panel,
+  #end-overlay {
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
 }

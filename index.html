@@ -57,6 +57,25 @@
           </button>
         </section>
       </div>
+
+      <div id="end-overlay" class="pointer-events-none absolute inset-0 z-40 hidden items-center justify-center bg-[#243136]/82 p-4">
+        <section class="pointer-events-auto w-full max-w-xl border-2 border-slate-200 bg-[#314146]/95 p-5 text-[#F5F5F5] shadow-2xl md:p-6">
+          <h2 id="end-title" class="mb-3 text-center font-pixel text-2xl uppercase tracking-wider text-[#F0E5D8] md:text-3xl">
+            Run Complete
+          </h2>
+          <p id="end-subtitle" class="mb-5 text-center font-pixel text-sm text-[#E0E0E0] md:text-base">
+            The tide settles, for now.
+          </p>
+          <div class="flex flex-col gap-3 md:flex-row md:justify-center">
+            <button id="restart-btn" class="min-h-[48px] flex-1 border-2 border-slate-200 bg-[#6FA0B0] px-5 py-3 font-pixel text-base uppercase tracking-wide text-[#F5F5F5] shadow-[0_4px_0_0_#5E7E8D] transition duration-200 hover:-translate-y-0.5 hover:bg-[#4A6570] active:translate-y-0.5">
+              Restart
+            </button>
+            <button id="end-menu-btn" class="min-h-[48px] flex-1 border-2 border-slate-200 bg-[#5E7E8D] px-5 py-3 font-pixel text-base uppercase tracking-wide text-[#F5F5F5] shadow-[0_4px_0_0_#4d6773] transition duration-200 hover:-translate-y-0.5 hover:bg-[#4A6570] active:translate-y-0.5">
+              Main Menu
+            </button>
+          </div>
+        </section>
+      </div>
     </div>
   </main>
 
@@ -67,7 +86,12 @@
     const howButton = document.getElementById('how-btn');
     const howPanel = document.getElementById('how-panel');
     const closeHowButton = document.getElementById('close-how-btn');
-    const uiButtons = [startButton, howButton, closeHowButton];
+    const endOverlay = document.getElementById('end-overlay');
+    const endTitle = document.getElementById('end-title');
+    const endSubtitle = document.getElementById('end-subtitle');
+    const restartButton = document.getElementById('restart-btn');
+    const endMenuButton = document.getElementById('end-menu-btn');
+    const uiButtons = [startButton, howButton, closeHowButton, restartButton, endMenuButton];
 
     let uiAudioCtx;
     const playUiTone = (frequency, gainLevel, durationSeconds) => {
@@ -118,6 +142,10 @@
         playUiTone(520, 0.009, 0.05);
         button.style.transform = '';
       });
+
+      button.addEventListener('pointercancel', () => {
+        button.style.transform = '';
+      });
     };
 
     uiButtons.forEach(wireButtonMicroInteraction);
@@ -134,16 +162,39 @@
       howPanel.classList.add('pointer-events-none');
     };
 
+    const setEndOverlayOpen = (isOpen, titleText = 'Run Complete', subtitleText = 'The tide settles, for now.') => {
+      if (isOpen) {
+        endTitle.textContent = titleText;
+        endSubtitle.textContent = subtitleText;
+        endOverlay.classList.remove('hidden');
+        endOverlay.classList.add('flex');
+        endOverlay.classList.remove('pointer-events-none');
+      } else {
+        endOverlay.classList.add('hidden');
+        endOverlay.classList.remove('flex');
+        endOverlay.classList.add('pointer-events-none');
+      }
+    };
+
     const setMenuOpen = (isOpen) => {
       if (isOpen) {
         startMenu.classList.remove('hidden');
         startMenu.classList.add('flex');
+        setEndOverlayOpen(false);
       } else {
         startMenu.classList.add('hidden');
         startMenu.classList.remove('flex');
         closeHowPanel();
       }
     };
+
+    document.addEventListener('risingtide:end-state', (event) => {
+      const detail = event.detail || {};
+      setEndOverlayOpen(Boolean(detail.open), detail.title, detail.subtitle);
+      if (detail.open) {
+        setMenuOpen(false);
+      }
+    });
 
     document.addEventListener('risingtide:menu-state', (event) => {
       setMenuOpen(Boolean(event.detail && event.detail.open));
@@ -155,9 +206,38 @@
     startButton.addEventListener('click', () => {
       closeHowPanel();
       setMenuOpen(false);
+      setEndOverlayOpen(false);
 
       if (window.risingTideStartGame) {
         window.risingTideStartGame();
+      }
+    });
+
+    restartButton.addEventListener('click', () => {
+      setEndOverlayOpen(false);
+      if (window.risingTideRestartGame) {
+        window.risingTideRestartGame();
+      }
+    });
+
+    endMenuButton.addEventListener('click', () => {
+      setEndOverlayOpen(false);
+      if (window.risingTideBackToMenu) {
+        window.risingTideBackToMenu();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (endOverlay.classList.contains('hidden')) return;
+
+      if (event.key === 'Enter' || event.key.toLowerCase() === 'r') {
+        event.preventDefault();
+        restartButton.click();
+      }
+
+      if (event.key.toLowerCase() === 'm') {
+        event.preventDefault();
+        endMenuButton.click();
       }
     });
   </script>
