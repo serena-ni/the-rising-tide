@@ -8,7 +8,6 @@ export class StartMenuScene extends Phaser.Scene {
   }
 
   preload() {
-    // Keep filenames stable so final pixel-art can be dropped in directly.
     this.load.image('underwaterShallow', 'assets/backgrounds/underwater_shallow.png');
     this.load.image('underwaterDeep', 'assets/backgrounds/underwater_deep.png');
     this.load.image('waterOverlaySprite', 'assets/sprites/water_overlay.png');

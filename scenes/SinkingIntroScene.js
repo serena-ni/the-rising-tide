@@ -2,8 +2,8 @@ import { GAME_HEIGHT, GAME_WIDTH } from './constants.js';
 
 const ASSET_PATHS = {
   bgBeach: 'assets/backgrounds/bg_beach.png',
-  bgShallow: 'assets/backgrounds/bg_shallow.png',
-  bgDeep: 'assets/backgrounds/bg_deep.png',
+  bgShallow: 'assets/backgrounds/underwater_shallow.png',
+  bgDeep: 'assets/backgrounds/underwater_deep.png',
   waterOverlay: 'assets/backgrounds/water_overlay.png',
   player: 'assets/sprites/player.png',
   trash: 'assets/sprites/trash.png',

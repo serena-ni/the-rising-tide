@@ -10,7 +10,6 @@ export class IntroScene extends Phaser.Scene {
   }
 
   preload() {
-    // Replace these placeholders with final pixel-art files using the same names.
     this.load.image('beachSurface', 'assets/backgrounds/beach_surface.png');
     this.load.image('underwaterShallow', 'assets/backgrounds/underwater_shallow.png');
     this.load.image('underwaterDeep', 'assets/backgrounds/underwater_deep.png');
@@ -38,7 +37,6 @@ export class IntroScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, GAME_WIDTH, introWorldHeight);
     this.cameras.main.setScroll(0, 0);
 
-    // Above-surface opening look.
     this.beach = this.add.tileSprite(GAME_WIDTH * 0.5, 270, GAME_WIDTH, GAME_HEIGHT, 'beachSurface');
     this.shallowBand = this.add.tileSprite(GAME_WIDTH * 0.5, 360, GAME_WIDTH, 180, 'underwaterShallow').setAlpha(0.32);
     this.waveOverlay = this.add.tileSprite(GAME_WIDTH * 0.5, 326, GAME_WIDTH, 130, 'waterOverlaySprite').setAlpha(0.12);
@@ -46,7 +44,6 @@ export class IntroScene extends Phaser.Scene {
     this.surfaceWaveBand = this.add.graphics().setDepth(30);
     this.secondaryWaveBand = this.add.graphics().setDepth(31);
 
-    // Hidden lower region that gets revealed during sink.
     this.underwaterLayer = this.add.tileSprite(GAME_WIDTH * 0.5, 740, GAME_WIDTH, 360, 'underwaterShallow').setAlpha(0.85);
     this.deepLayer = this.add.tileSprite(GAME_WIDTH * 0.5, 920, GAME_WIDTH, 320, 'underwaterDeep').setAlpha(0.95);
     this.transitionOverlay = this.add.rectangle(GAME_WIDTH * 0.5, 520, GAME_WIDTH, 34, 0xb8c8ce, 0.24);

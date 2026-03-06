@@ -9,7 +9,6 @@ export function sumSines(x, time, terms) {
 export function waveHeight(x, time, config) {
   const harmonic = sumSines(x, time, config.terms);
 
-  // Small sharp crest trick: a shaped sine that creates pointier peaks.
   const crestBase = (Math.sin(x * config.crestFrequency + time * config.crestSpeed) + 1) * 0.5;
   const crest = Math.pow(crestBase, config.crestSharpness) * config.crestAmplitude;
 
@@ -17,7 +16,6 @@ export function waveHeight(x, time, config) {
 }
 
 export function currentField(x, y, time) {
-  // A lightweight pseudo-fluid field made from two phase-shifted sine lattices.
   const u1 = Math.sin(x * 0.008 + time * 1.35) * Math.cos(y * 0.012 - time * 0.9);
   const u2 = Math.sin((x + y) * 0.004 - time * 0.65);
   const v1 = Math.cos(x * 0.007 - time * 1.05) * Math.sin(y * 0.010 + time * 0.7);
@@ -42,7 +40,6 @@ export function drawWaveBand(graphics, width, height, time, options) {
 
   graphics.clear();
 
-  // Filled water body beneath the wave curve.
   graphics.fillStyle(fillColor, fillAlpha);
   graphics.beginPath();
   graphics.moveTo(0, height);
@@ -56,7 +53,6 @@ export function drawWaveBand(graphics, width, height, time, options) {
   graphics.closePath();
   graphics.fillPath();
 
-  // Crest/foam line.
   graphics.lineStyle(lineWidth, lineColor, lineAlpha);
   graphics.beginPath();
 

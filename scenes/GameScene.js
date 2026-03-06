@@ -46,7 +46,6 @@ export class GameScene extends Phaser.Scene {
   create() {
     this.cameras.main.fadeIn(460, 0, 0, 0);
 
-    // Floatier underwater movement.
     this.physics.world.gravity.y = 390;
     this.physics.world.setBounds(0, 0, WORLD_PLAY_WIDTH, WORLD_PLAY_HEIGHT);
 
@@ -412,7 +411,6 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.existing(this.goal, true);
 
     this.goalLabel = this.add.text(WORLD_PLAY_WIDTH * 0.5, WORLD_PLAY_HEIGHT - 120, 'ABYSS FLOOR', {
-      // Silkscreen for in-canvas UI text. Change fontFamily here to swap pixel font.
       fontFamily: 'Silkscreen, monospace',
       fontSize: '16px',
       color: '#D8E3E7',
@@ -425,7 +423,6 @@ export class GameScene extends Phaser.Scene {
 
   createHud() {
     this.hudText = this.add.text(14, 14, 'Score 0   Depth 0%   Lives 3', {
-      // Silkscreen for HUD readability on underwater backgrounds.
       fontFamily: 'Silkscreen, monospace',
       fontSize: '18px',
       color: '#C0D6E4',
@@ -450,7 +447,6 @@ export class GameScene extends Phaser.Scene {
 
     this.mobileInput.jumpQueued = false;
 
-    // Gets harder with depth: less horizontal control and weaker jump.
     const speed = Phaser.Math.Linear(180, 130, this.depthProgress);
     const jumpPower = Phaser.Math.Linear(-314, -248, this.depthProgress);
     const accel = speed * 7.6;
@@ -592,7 +588,6 @@ export class GameScene extends Phaser.Scene {
   applyCurrentToPlayer(dt) {
     const flow = currentField(this.player.x, this.player.y, this.time.now * 0.001);
 
-    // Deeper layers have stronger currents.
     const currentScale = Phaser.Math.Linear(0.011, 0.022, this.depthProgress);
     this.player.body.velocity.x += flow.x * currentScale * dt * 60;
     this.player.body.velocity.y += flow.y * currentScale * 0.8 * dt * 60;

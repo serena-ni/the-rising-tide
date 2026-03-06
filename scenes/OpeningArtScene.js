@@ -1,7 +1,5 @@
 import { GAME_HEIGHT, GAME_WIDTH } from './constants.js';
 
-// OpeningArtScene: static above-the-surface beach tableau with subtle life.
-// Replace image paths below with final pixel-art files to swap visuals.
 export class OpeningArtScene extends Phaser.Scene {
   constructor() {
     super('OpeningArtScene');
@@ -10,7 +8,7 @@ export class OpeningArtScene extends Phaser.Scene {
 
   preload() {
     this.load.image('bgBeach', 'assets/backgrounds/bg_beach.png');
-    this.load.image('bgShallow', 'assets/backgrounds/bg_shallow.png');
+    this.load.image('bgShallow', 'assets/backgrounds/underwater_shallow.png');
     this.load.image('waterOverlay', 'assets/backgrounds/water_overlay.png');
     this.load.image('bubble', 'assets/sprites/bubble.png');
     this.load.image('creature', 'assets/sprites/creature.png');

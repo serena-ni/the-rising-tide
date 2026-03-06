@@ -8,10 +8,9 @@ export class PlatformerScene extends Phaser.Scene {
   }
 
   preload() {
-    // Replace these placeholder assets with your production art using the same filenames.
     this.load.image('bgBeach', 'assets/backgrounds/bg_beach.png');
-    this.load.image('bgShallow', 'assets/backgrounds/bg_shallow.png');
-    this.load.image('bgDeep', 'assets/backgrounds/bg_deep.png');
+    this.load.image('bgShallow', 'assets/backgrounds/underwater_shallow.png');
+    this.load.image('bgDeep', 'assets/backgrounds/underwater_deep.png');
     this.load.image('waterOverlay', 'assets/backgrounds/water_overlay.png');
 
     this.load.image('player', 'assets/sprites/player.png');
