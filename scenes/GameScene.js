@@ -21,6 +21,10 @@ export class GameScene extends Phaser.Scene {
     this.cameraZoomTween = null;
   }
 
+  init() {
+    this.resetRunState();
+  }
+
   preload() {
     this.load.image('beachSurface', 'assets/backgrounds/beach_surface.png');
     this.load.image('underwaterShallow', 'assets/backgrounds/underwater_shallow.png');
@@ -41,9 +45,12 @@ export class GameScene extends Phaser.Scene {
     this.load.image('trash2', 'assets/sprites/trash2.png');
     this.load.image('trash3', 'assets/sprites/trash3.png');
     this.load.image('trash4', 'assets/sprites/trash4.png');
+
+    this.load.audio('waterBgm', 'assets/water.mp3');
   }
 
   create() {
+    this.physics.world.resume();
     this.cameras.main.fadeIn(460, 0, 0, 0);
 
     this.physics.world.gravity.y = 390;
@@ -84,10 +91,24 @@ export class GameScene extends Phaser.Scene {
     this.startUnderwaterAudio();
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.stopUnderwaterAudio();
       document.dispatchEvent(new CustomEvent('risingtide:menu-state', { detail: { open: false } }));
       document.dispatchEvent(new CustomEvent('risingtide:end-state', { detail: { open: false } }));
     });
+  }
+
+  resetRunState() {
+    this.score = 0;
+    this.depthProgress = 0;
+    this.lives = 3;
+    this.invulnerableTime = 0;
+    this.isEnding = false;
+    this.coyoteTimer = 0;
+    this.jumpBufferTimer = 0;
+    this.wasGrounded = false;
+    this.lastLandingFxTime = -9999;
+    this.lowLifeHudPulse = 0;
+    this._endOverlayShown = false;
+    this.cameraZoomTween = null;
   }
 
   update(_, delta) {
@@ -252,8 +273,8 @@ export class GameScene extends Phaser.Scene {
     this.trashGroup = this.physics.add.group({
       allowGravity: false,
       collideWorldBounds: true,
-      bounceX: 1,
-      bounceY: 1
+      bounceX: 0.42,
+      bounceY: 0.3
     });
 
     for (let bandIndex = 0; bandIndex < this.interTierBands.length; bandIndex++) {
@@ -274,12 +295,21 @@ export class GameScene extends Phaser.Scene {
           key
         ).setScale(1.62 + band.depthRatio * 0.28);
 
+        const bandMidY = (band.top + band.bottom) * 0.5;
         trash.setVelocity(
-          Phaser.Math.Between(-28, 28) + band.depthRatio * Phaser.Math.Between(-14, 14),
-          Phaser.Math.Between(-20, 14)
+          Phaser.Math.Between(-22, 22),
+          Phaser.Math.Between(-14, 10)
         );
-        trash.setDrag(6, 5);
+        trash.setDrag(28, 24);
+        trash.setMaxVelocity(56 + band.depthRatio * 16, 42 + band.depthRatio * 12);
         trash.waveOffset = Phaser.Math.FloatBetween(0, Math.PI * 2);
+        trash.centerX = Phaser.Math.Clamp(spawnX + Phaser.Math.Between(-40, 40), 72, WORLD_PLAY_WIDTH - 72);
+        trash.centerY = Phaser.Math.Clamp(bandMidY + Phaser.Math.Between(-12, 12), band.top + 8, band.bottom - 8);
+        trash.driftRadiusX = Phaser.Math.Between(26, 78);
+        trash.driftRadiusY = Phaser.Math.Between(10, 30);
+        trash.driftSpeed = Phaser.Math.FloatBetween(0.6, 1.4);
+        trash.bandTop = band.top;
+        trash.bandBottom = band.bottom;
         trash.setCircle(6, 2, 2);
       }
     }
@@ -344,6 +374,10 @@ export class GameScene extends Phaser.Scene {
         enemy.direction = Phaser.Math.Between(0, 1) ? 1 : -1;
         enemy.originY = y;
         enemy.waveOffset = Phaser.Math.FloatBetween(0, Math.PI * 2);
+        enemy.verticalAmplitude = Phaser.Math.FloatBetween(5, 11);
+        enemy.leftBound = Phaser.Math.Clamp(band.centerX - Phaser.Math.Between(170, 260), 72, WORLD_PLAY_WIDTH - 180);
+        enemy.rightBound = Phaser.Math.Clamp(band.centerX + Phaser.Math.Between(170, 260), 180, WORLD_PLAY_WIDTH - 72);
+        enemy.setVelocityX(enemy.direction * enemy.patrolSpeed);
         enemy.setFlipX(enemy.direction < 0);
       }
     }
@@ -366,6 +400,10 @@ export class GameScene extends Phaser.Scene {
       fish.direction = Phaser.Math.Between(0, 1) ? 1 : -1;
       fish.setFlipX(fish.direction < 0);
       fish.floatOffset = Phaser.Math.FloatBetween(0, Math.PI * 2);
+      fish.originY = fish.y;
+      fish.leftBound = Phaser.Math.Clamp(fish.x - Phaser.Math.Between(110, 220), 60, WORLD_PLAY_WIDTH - 120);
+      fish.rightBound = Phaser.Math.Clamp(fish.x + Phaser.Math.Between(110, 220), 120, WORLD_PLAY_WIDTH - 60);
+      fish.verticalAmplitude = Phaser.Math.FloatBetween(4, 12);
       this.fishGroup.add(fish);
     }
   }
@@ -408,7 +446,16 @@ export class GameScene extends Phaser.Scene {
 
   createGoalZone() {
     this.goal = this.add.rectangle(WORLD_PLAY_WIDTH * 0.5, WORLD_PLAY_HEIGHT - 120, 320, 80, 0x53e0ff, 0.18);
-    this.physics.add.existing(this.goal, true);
+
+    this.goalTrigger = this.add.rectangle(
+      WORLD_PLAY_WIDTH * 0.5,
+      WORLD_PLAY_HEIGHT - 120,
+      WORLD_PLAY_WIDTH,
+      150,
+      0x53e0ff,
+      0
+    );
+    this.physics.add.existing(this.goalTrigger, true);
 
     this.goalLabel = this.add.text(WORLD_PLAY_WIDTH * 0.5, WORLD_PLAY_HEIGHT - 120, 'ABYSS FLOOR', {
       fontFamily: 'Silkscreen, monospace',
@@ -418,7 +465,7 @@ export class GameScene extends Phaser.Scene {
       strokeThickness: 4
     }).setOrigin(0.5);
 
-    this.physics.add.overlap(this.player, this.goal, () => this.winGame(), null, this);
+    this.physics.add.overlap(this.player, this.goalTrigger, () => this.winGame(), null, this);
   }
 
   createHud() {
@@ -469,7 +516,7 @@ export class GameScene extends Phaser.Scene {
       this.player.setVelocityY(jumpPower);
       this.jumpBufferTimer = 0;
       this.coyoteTimer = 0;
-      this.playPlink(280, 0.03);
+      this.playJumpSfx();
       this.tweens.add({
         targets: this.player,
         scaleX: 1.82,
@@ -559,7 +606,7 @@ export class GameScene extends Phaser.Scene {
       this.landingEmitter.explode(8, this.player.x, this.player.y + 12);
     }
 
-    this.playPlink(220, 0.014);
+    this.playLandingSfx();
     this.cameras.main.shake(60, 0.0012);
 
     this.tweens.killTweensOf(this.player);
@@ -660,13 +707,26 @@ export class GameScene extends Phaser.Scene {
 
   updateTrashDrift(dt) {
     const time = this.time.now * 0.001;
-    const deepFactor = Phaser.Math.Linear(1, 1.6, this.depthProgress);
+    const deepFactor = Phaser.Math.Linear(1, 1.45, this.depthProgress);
 
     for (const trash of this.trashGroup.getChildren()) {
       const flow = currentField(trash.x, trash.y, time);
-      trash.body.velocity.x += (Math.sin(time * 1.6 + trash.waveOffset) * 0.8 + flow.x * 0.035) * deepFactor;
-      trash.body.velocity.y += (Math.cos(time * 1.9 + trash.waveOffset) * 0.5 + flow.y * 0.03) * deepFactor;
-      trash.body.velocity.scale(1 - dt * 0.2);
+      const orbitTime = time * trash.driftSpeed + trash.waveOffset;
+      const targetX = Phaser.Math.Clamp(
+        trash.centerX + Math.sin(orbitTime * 1.6) * trash.driftRadiusX,
+        62,
+        WORLD_PLAY_WIDTH - 62
+      );
+      const targetY = Phaser.Math.Clamp(
+        trash.centerY + Math.cos(orbitTime) * trash.driftRadiusY,
+        trash.bandTop + 6,
+        trash.bandBottom - 6
+      );
+
+      trash.body.velocity.x += ((targetX - trash.x) * 0.85 + flow.x * 0.018) * deepFactor;
+      trash.body.velocity.y += ((targetY - trash.y) * 0.75 + flow.y * 0.015) * deepFactor;
+      trash.body.velocity.x = Phaser.Math.Clamp(trash.body.velocity.x, -70, 70);
+      trash.body.velocity.y = Phaser.Math.Clamp(trash.body.velocity.y, -48, 48);
     }
 
     for (const item of this.collectibles.getChildren()) {
@@ -678,10 +738,12 @@ export class GameScene extends Phaser.Scene {
   updateEnemyMotion(dt) {
     for (const enemy of this.enemies.getChildren()) {
       enemy.x += enemy.patrolSpeed * enemy.direction * dt;
-      enemy.y = enemy.originY + Math.sin(this.time.now * 0.003 + enemy.waveOffset) * 8;
+      enemy.y = enemy.originY + Math.sin(this.time.now * 0.003 + enemy.waveOffset) * enemy.verticalAmplitude;
 
-      if (enemy.x < 70 || enemy.x > WORLD_PLAY_WIDTH - 70) {
+      if (enemy.x <= enemy.leftBound || enemy.x >= enemy.rightBound) {
+        enemy.x = Phaser.Math.Clamp(enemy.x, enemy.leftBound, enemy.rightBound);
         enemy.direction *= -1;
+        enemy.setVelocityX(enemy.direction * enemy.patrolSpeed);
         enemy.setFlipX(enemy.direction < 0);
       }
     }
@@ -690,9 +752,10 @@ export class GameScene extends Phaser.Scene {
   updateFishMotion(dt) {
     for (const fish of this.fishGroup.getChildren()) {
       fish.x += fish.speed * fish.direction * dt;
-      fish.y += Math.sin(this.time.now * 0.002 + fish.floatOffset) * 0.08;
+      fish.y = fish.originY + Math.sin(this.time.now * 0.002 + fish.floatOffset) * fish.verticalAmplitude;
 
-      if (fish.x < 60 || fish.x > WORLD_PLAY_WIDTH - 60) {
+      if (fish.x <= fish.leftBound || fish.x >= fish.rightBound) {
+        fish.x = Phaser.Math.Clamp(fish.x, fish.leftBound, fish.rightBound);
         fish.direction *= -1;
         fish.setFlipX(fish.direction < 0);
       }
@@ -724,7 +787,7 @@ export class GameScene extends Phaser.Scene {
     player.body.velocity.y += push.y * 0.5;
     player.body.velocity.scale(0.8);
 
-    this.playPlink(170, 0.04);
+    this.playHazardHitSfx();
     this.cameras.main.shake(110, 0.0032);
     this.cameras.main.flash(90, 110, 138, 150, true);
     this.damagePlayer(player.x, player.y);
@@ -737,7 +800,7 @@ export class GameScene extends Phaser.Scene {
     player.body.velocity.x += push.x;
     player.body.velocity.y += push.y - 90;
 
-    this.playPlink(140, 0.05);
+    this.playHazardHitSfx(true);
     this.cameras.main.shake(130, 0.0038);
     this.cameras.main.flash(110, 118, 150, 165, true);
     this.damagePlayer(player.x, player.y);
@@ -767,7 +830,7 @@ export class GameScene extends Phaser.Scene {
 
     item.disableBody(true, true);
     this.score += item.scoreValue;
-    this.playPlink(500 + Phaser.Math.Between(-40, 70), 0.024);
+    this.playBubblePingSfx();
 
     if (this.pickupEmitter) {
       this.pickupEmitter.explode(10, collectX, collectY);
@@ -840,7 +903,6 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setZoom(1);
 
     this.physics.world.pause();
-    this.stopUnderwaterAudio();
 
     if (this.mobileControls) {
       this.mobileInput.left = false;
@@ -883,39 +945,29 @@ export class GameScene extends Phaser.Scene {
 
   startUnderwaterAudio() {
     this.audioContext = this.sound.context;
-    if (!this.audioContext) return;
-
-    if (this.audioContext.state === 'suspended') {
+    if (this.audioContext && this.audioContext.state === 'suspended') {
       this.audioContext.resume();
     }
 
-    const buffer = this.createNoiseBuffer(this.audioContext, 3.2, 0.2);
-    this.underSource = this.audioContext.createBufferSource();
-    this.underSource.buffer = buffer;
-    this.underSource.loop = true;
+    this.underMusic = this.sound.get('waterBgm') || this.sound.add('waterBgm', {
+      loop: true,
+      volume: 0
+    });
 
-    this.underFilter = this.audioContext.createBiquadFilter();
-    this.underFilter.type = 'lowpass';
-    this.underFilter.frequency.value = 340;
-
-    this.underGain = this.audioContext.createGain();
-    this.underGain.gain.value = 0;
-
-    this.underSource.connect(this.underFilter);
-    this.underFilter.connect(this.underGain);
-    this.underGain.connect(this.audioContext.destination);
-    this.underSource.start();
+    if (!this.underMusic.isPlaying) {
+      this.underMusic.play();
+    }
   }
 
   updateUnderwaterAudio() {
-    if (!this.underGain || !this.audioContext) return;
+    if (!this.underMusic) return;
     const targetVolume = 0.04 + this.depthProgress * 0.1;
-    this.underGain.gain.linearRampToValueAtTime(targetVolume, this.audioContext.currentTime + 0.08);
+    this.underMusic.setVolume(targetVolume);
   }
 
   stopUnderwaterAudio() {
-    if (this.underSource) {
-      this.underSource.stop();
+    if (this.underMusic) {
+      this.underMusic.setVolume(0.08);
     }
   }
 
@@ -937,6 +989,47 @@ export class GameScene extends Phaser.Scene {
 
     oscillator.start(now);
     oscillator.stop(now + 0.21);
+  }
+
+  playLandingSfx() {
+    this.playToneSweep(190, 130, 0.028, 0.12, 'triangle');
+  }
+
+  playJumpSfx() {
+    this.playToneSweep(260, 340, 0.02, 0.09, 'sine');
+  }
+
+  playBubblePingSfx() {
+    this.playToneSweep(720 + Phaser.Math.Between(-40, 40), 980 + Phaser.Math.Between(-30, 30), 0.024, 0.11, 'sine');
+  }
+
+  playHazardHitSfx(heavy = false) {
+    const start = heavy ? 180 : 220;
+    const end = heavy ? 95 : 130;
+    const level = heavy ? 0.048 : 0.04;
+    const dur = heavy ? 0.16 : 0.12;
+    this.playToneSweep(start, end, level, dur, 'square');
+  }
+
+  playToneSweep(startFrequency, endFrequency, gainLevel, duration, waveType = 'sine') {
+    if (!this.audioContext) return;
+
+    const oscillator = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+    const now = this.audioContext.currentTime;
+
+    oscillator.type = waveType;
+    oscillator.frequency.setValueAtTime(startFrequency, now);
+    oscillator.frequency.exponentialRampToValueAtTime(Math.max(40, endFrequency), now + duration);
+
+    gain.gain.setValueAtTime(gainLevel, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    oscillator.connect(gain);
+    gain.connect(this.audioContext.destination);
+
+    oscillator.start(now);
+    oscillator.stop(now + duration + 0.02);
   }
 
   createNoiseBuffer(ctx, seconds, intensity) {

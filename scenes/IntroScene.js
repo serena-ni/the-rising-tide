@@ -27,6 +27,8 @@ export class IntroScene extends Phaser.Scene {
     this.load.image('trash2', 'assets/sprites/trash2.png');
     this.load.image('trash3', 'assets/sprites/trash3.png');
     this.load.image('trash4', 'assets/sprites/trash4.png');
+
+    this.load.audio('waterBgm', 'assets/water.mp3');
   }
 
   create() {
@@ -287,40 +289,19 @@ export class IntroScene extends Phaser.Scene {
 
   startSurfaceAudio() {
     this.audioContext = this.sound.context;
-    if (!this.audioContext) return;
-
-    if (this.audioContext.state === 'suspended') {
+    if (this.audioContext && this.audioContext.state === 'suspended') {
       this.audioContext.resume();
     }
 
-    const buffer = this.createNoiseBuffer(this.audioContext, 2.4, 0.17);
-    this.surfaceSource = this.audioContext.createBufferSource();
-    this.surfaceSource.buffer = buffer;
-    this.surfaceSource.loop = true;
+    this.surfaceMusic = this.sound.get('waterBgm') || this.sound.add('waterBgm', {
+      loop: true,
+      volume: 0.08
+    });
 
-    this.surfaceFilter = this.audioContext.createBiquadFilter();
-    this.surfaceFilter.type = 'highpass';
-    this.surfaceFilter.frequency.value = 760;
-
-    this.surfaceGain = this.audioContext.createGain();
-    this.surfaceGain.gain.value = 0.08;
-
-    this.surfaceSource.connect(this.surfaceFilter);
-    this.surfaceFilter.connect(this.surfaceGain);
-    this.surfaceGain.connect(this.audioContext.destination);
-    this.surfaceSource.start();
-  }
-
-  createNoiseBuffer(ctx, seconds, intensity) {
-    const sampleCount = Math.floor(ctx.sampleRate * seconds);
-    const buffer = ctx.createBuffer(1, sampleCount, ctx.sampleRate);
-    const channel = buffer.getChannelData(0);
-
-    for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
-      channel[sampleIndex] = (Math.random() * 2 - 1) * intensity;
+    this.surfaceMusic.setVolume(0.08);
+    if (!this.surfaceMusic.isPlaying) {
+      this.surfaceMusic.play();
     }
-
-    return buffer;
   }
 
   exitToMenu() {
@@ -332,9 +313,6 @@ export class IntroScene extends Phaser.Scene {
     this.cameras.main.fadeOut(520, 0, 0, 0);
 
     this.time.delayedCall(540, () => {
-      if (this.surfaceSource) {
-        this.surfaceSource.stop();
-      }
       this.scene.start('StartMenuScene');
     });
   }

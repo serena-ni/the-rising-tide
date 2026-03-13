@@ -23,10 +23,21 @@ export class StartMenuScene extends Phaser.Scene {
     this.load.image('fish3', 'assets/sprites/fish3.png');
     this.load.image('fish4', 'assets/sprites/fish4.png');
     this.load.image('fish5', 'assets/sprites/fish5.png');
+
+    this.load.audio('waterBgm', 'assets/water.mp3');
   }
 
   create() {
     this.cameras.main.fadeIn(450, 0, 0, 0);
+
+    this.menuMusic = this.sound.get('waterBgm') || this.sound.add('waterBgm', {
+      loop: true,
+      volume: 0.08
+    });
+    this.menuMusic.setVolume(0.08);
+    if (!this.menuMusic.isPlaying) {
+      this.menuMusic.play();
+    }
 
     this.bgShallow = this.add.tileSprite(GAME_WIDTH * 0.5, 170, GAME_WIDTH, 300, 'underwaterShallow');
     this.bgDeep = this.add.tileSprite(GAME_WIDTH * 0.5, 410, GAME_WIDTH, 260, 'underwaterDeep');

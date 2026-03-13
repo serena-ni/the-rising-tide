@@ -31,7 +31,7 @@
           The Rising Tide
         </h1>
         <p class="mb-4 px-6 text-center font-pixel text-base text-[#E0E0E0]/95 md:text-lg">
-          The Rising Tide • Under the Surface
+          The Rising Tide
         </p>
 
         <button id="start-btn" class="w-64 border-2 border-slate-200 bg-[#6FA0B0] px-6 py-3 font-pixel text-lg uppercase tracking-wide text-[#F5F5F5] shadow-[0_4px_0_0_#5E7E8D] transition duration-200 hover:-translate-y-0.5 hover:bg-[#4A6570] hover:shadow-[0_6px_0_0_#3d5560] active:translate-y-0.5 active:shadow-[0_2px_0_0_#3d5560]">
@@ -119,7 +119,7 @@
         oscillator.start(now);
         oscillator.stop(now + durationSeconds + 0.01);
       } catch (error) {
-        // Silent fallback if browser blocks autoplay audio.
+        // fallback to silent failure
       }
     };
 
